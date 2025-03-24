@@ -1,46 +1,107 @@
-# DNN-based Traffic Light Control System
+# DDQN-DNN for Multi-Intersection Traffic Signal Control
 
-This repository contains the implementation of a Deep Neural Network (DNN) based traffic light control system using Double Deep Q-Networks (DDQN).
+## Table of contents
 
-## Table of Contents
-
-1. [Introduction](#introduction)
-2. [Method](#method)
-3. [Experiments](#experiments)
-4. [Conclusions](#conclusions)
+1. [Introduction](#1-introduction)  
+2. [Method](#2-method)  
+3. [Experiments](#3-experiments)  
+4. [Conclusions](#4-conclusions)
 
 ---
 
-### 1. Introduction
+## 1. Introduction
 
-In this project, we explore the application of Deep Reinforcement Learning (DRL) for traffic light control in urban intersections. The goal is to optimize traffic flow and reduce waiting times using DDQN.
+With the evolution of intelligent traffic management and reinforcement learning techniques, optimizing signal control across multiple intersections has become a critical research direction. Traditional fixed-time strategies often fail to adapt to real-time traffic variations, leading to congestion and inefficiency.
 
-### 2. Method
+To tackle these issues, we propose a **Deep Double Q-Network with Deep Neural Network (DDQN-DNN)** approach, enabling agents to learn adaptive control policies directly from simulation feedback. The model leverages powerful function approximation capabilities of DNN and the stability improvements of the Double DQN algorithm.
 
-The method involves training a DDQN to learn the optimal policy for traffic light control. The state space includes the current queue lengths and waiting times at each intersection. The action space consists of different traffic light settings.
+This framework trains one agent per intersection using a DDQN backbone with a configurable neural network, allowing for flexible policy learning and improved decision-making under dynamic traffic scenarios.
 
-#### Formulas
+---
 
-The Q-value update rule in DDQN is given by:
-\[ Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma \max_{a'} Q\left(s', a'\right) - Q(s, a) \right] \]
-where:
-- \( Q(s, a) \) is the Q-value for state \( s \) and action \( a \)
-- \( \alpha \) is the learning rate
-- \( r \) is the reward received after taking action \( a \) in state \( s \)
-- \( \gamma \) is the discount factor
-- \( s' \) is the next state
+## 2. Method
 
-### 3. Experiments
+The **DDQN-DNN** algorithm is implemented based on the following components:
 
-We conducted experiments using a simulated environment with multiple intersections. The performance of the DDQN controller was compared against traditional fixed-time controllers.
+- **State Space**: Each intersection agent observes traffic features such as:
+  - Lane occupancy, vehicle count, average speed, and congestion length
+  - Data is collected using E2/E3 detectors
 
-#### Results
+- **Action Space**: Discrete phase-switching decisions:
+  $$
+  a_t \in \{ \text{keep\_current}, \text{switch\_to\_phase}_1, \text{switch\_to\_phase}_2, \dots \}
+  $$
 
-The results showed significant improvements in traffic flow efficiency and reduced average waiting times.
+- **Reward Function**: Designed to **minimize traffic delay**:
+  $$
+  \mathcal{R}_t = \frac{1}{\text{MeanTimeLoss}_t + \varepsilon}
+  $$
 
-#### 4. Conclusions
+- **Q-value Function**: The target value is computed via Double DQN:
+  $$
+  y = r + \gamma Q_{\text{target}}(s', \arg\max_{a} Q_{\text{online}}(s', a; \theta); \theta^-)
+  $$
+  where:
+  - \( Q_{\text{online}} \): online Q-network
+  - \( Q_{\text{target}} \): target Q-network
+  - \( \theta, \theta^- \): network parameters
 
-This project demonstrates the potential of using DDQN for adaptive traffic light control. Future work will focus on scaling the approach to real-world scenarios and integrating with existing traffic management systems.
+### Experience Replay
 
-The experiments were conducted using the traffic simulation platform **SUMO**, testing signal control for multiple intersections. Different traffic flows and signal cycle configurations were used to validate the adaptability and superiority of the **DuelingDDQN-DNN** algorithm in various scenarios.
+To improve learning efficiency and stability, the algorithm uses experience replay and periodic target updates.
 
+---
+
+## 3. Experiments
+
+### Performance Evaluation Metrics
+
+To evaluate the performance of the **DDQN-DNN** model, the following indicators are recorded:
+
+- **Queue Length**: Number of vehicles waiting at each intersection.
+- **Waiting Time**: Total stop duration at red lights.
+- **Average Speed**: Mean speed of vehicles approaching the intersection.
+- **Lane Occupancy**: Ratio of occupied length per lane.
+- **Pressure**: Difference in vehicle count between incoming and outgoing lanes.
+
+### Reward Design
+
+The reward is defined inversely to the average **time loss** on the E3 detectors:
+
+$$
+\mathcal{R}_t = \frac{1}{\text{TimeLoss}_t}
+$$
+
+This encourages the agent to reduce cumulative delays over time.
+
+---
+
+## 4. Conclusions
+
+The proposed **DDQN-DNN** framework demonstrates effective traffic signal control under various traffic scenarios. Compared to classical Q-learning, the **DDQN-DNN** model:
+
+- Achieves lower queue lengths and waiting times
+- Maintains smoother vehicle flow (higher average speeds)
+- Adapts well to dynamic traffic conditions
+
+Simulations are conducted in **SUMO**, where agents are deployed at different intersections and learn independently. Configurations are defined through YAML files for reproducibility and modularity.
+
+---
+
+## Code Structure
+
+```bash
+├── main_DDQN_DNN.py               # Main training script
+├── agent_ex/
+│   └── ddqn_dnn_tls_agent.py      # Agent logic with experience replay and DDQN
+├── init/
+│   ├── import_modules.py
+│   └── init_dnn.py                # Loads YAML parameters
+├── utils/
+│   └── process_control_ddqn_dnn.py
+├── traci_ex/
+│   ├── value_retrieval.py         # From E2/E3 detectors
+│   ├── value_changing.py          # Traffic light manipulation
+│   └── basic_commands.py          # SUMO simulation step logic
+├── save_data/
+│   └── save_data.py               # Save reward/loss per episode
