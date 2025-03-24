@@ -1,60 +1,114 @@
-Traffic Signal Control Using Actor-Critic with Boltzmann Exploration
-Abstract
-This project implements a reinforcement learning (RL) framework for adaptive traffic signal control at intersections using the Actor-Critic (AC) algorithm combined with Boltzmann (Softmax) exploration. The goal is to optimize traffic flow efficiency by dynamically adjusting signal phases based on real-time traffic conditions. The solution integrates with the SUMO simulator for realistic traffic modeling and evaluation.
-1. Introduction
-Traffic congestion remains a critical challenge in urban mobility. Traditional fixed-time traffic signal controllers often fail to adapt to dynamic traffic patterns, leading to inefficiencies. Reinforcement learning (RL) offers a data-driven approach to optimize signal timing by learning from interactions with the environment. This project employs an Actor-Critic architecture with Boltzmann exploration to balance exploration and exploitation during training. The framework is tested using SUMO (Simulation of Urban MObility), a widely used traffic simulation platform, to validate its effectiveness in reducing congestion and improving traffic metrics.
+# Actor-Critic with Boltzmann Exploration for Multi-Intersection Traffic Signal Control
 
-2. Method
-2.1 Algorithm Overview
-The core algorithm combines Q-learning with Boltzmann exploration for action selection. Key components include:
-Q-Table: Stores state-action values for each intersection.
-Boltzmann Policy: Selects actions probabilistically based on Q-values and a temperature parameter \tau ：
-\[
-P(a|s) = \frac{e^{Q(s,a)/\tau}}{\sum_{a'} e^{Q(s,a')/\tau}}
-\]
-where \tau  controls exploration (higher \tau increases randomness).
-Actor-Critic Update: The Q-table is updated using the temporal difference error:
-\[
-Q(s,a) \leftarrow Q(s,a) + \alpha \left[ r + \gamma \max_{a'} Q(s',a') - Q(s,a) \right]
-\]
-2.2 Implementation Details
-State Representation: Includes traffic metrics such as occupancy, speed, and vehicle count from SUMO detectors.
-Action Space: Predefined signal phase configurations (e.g., phase_0, phase_1).
-Reward Function: Inverse of time loss at intersections:
-\[
-R = \frac{1}{\text{time\_loss}}
-\]
-2.3 Code Structure
-Agent Module (intersection_agent.py): Manages Q-tables, state-action pairs, and policy execution.
-SUMO Integration (traci_ex/): Handles simulation control, data retrieval, and signal switching.
-Training Loop (main_AC_boltzmann.py): Coordinates episode execution, agent updates, and data logging.
+## Table of Contents
 
-3. Experiments
-3.1 Setup
-Simulator: SUMO with a 4-intersection grid network.
-Training Parameters:
-Episodes: 100
-Simulation time per episode: 3600 seconds (1 hour)
-Learning rate (\alpha): 0.1
-Discount factor (\gamma): 0.9
-Temperature (\tau): Annealed from 1.0 to 0.1
-3.2 Metrics
-Reward: Cumulative inverse time loss per episode.
-Traffic Efficiency: Average speed, queue length, and waiting time.
+1. [Introduction](#1-introduction)  
+2. [Method](#2-method)  
+3. [Experiments](#3-experiments)  
+4. [Conclusions](#4-conclusions)
 
-4. Results
-Learning Curve: The reward increased by 58% over 100 episodes, indicating improved policy optimization (see reward_data.csv).
-Traffic Metrics:
-Average speed improved by 22%.
-Queue length reduced by 35% at peak hours.
-Exploration-Exploitation Tradeoff: Lower \tau values in later episodes prioritized exploitation, stabilizing performance.
+---
 
-5. Conclusions
-This project demonstrates the effectiveness of Boltzmann-based Actor-Critic methods for adaptive traffic signal control. Key findings include:
-The Boltzmann policy enables efficient exploration without excessive traffic disruption.
-Dynamic adjustment of /tau accelerates convergence.
-Integration with SUMO provides a realistic evaluation platform.
-Future Work:
-Extend to multi-agent coordination.
-Incorporate deep Q-networks (DQN) for high-dimensional state spaces.
-Test on larger and more complex road networks.
+## 1. Introduction
+
+In the era of intelligent transportation systems, coordinated control of multiple intersections plays a vital role in improving traffic efficiency and reducing congestion. Traditional fixed-time signal control strategies lack the adaptability to dynamic traffic conditions, motivating the development of **reinforcement learning** (RL) techniques.
+
+This project proposes an **Actor-Critic (AC)** algorithm with **Boltzmann exploration**, implemented within a SUMO-based traffic simulation environment. The learning agent, instantiated per intersection, utilizes a value-function-based architecture with continuous policy updates and temperature-based action selection, aiming to balance exploration and exploitation during learning.
+
+---
+
+## 2. Method
+
+The framework integrates **Actor-Critic Reinforcement Learning** with **Boltzmann exploration** for adaptive traffic signal control across intersections.
+
+### Components
+
+- **State Space**  
+  The agent’s observation includes current traffic light phase, queue length, lane occupancy, vehicle speed, and other sensor-derived values:
+  
+  $$
+  s_t = \{ \text{phase}_t, \text{queue\_length}_t, \text{occupancy}_t, \text{speed}_t, \dots \}
+  $$
+
+- **Action Space**  
+  The agent can choose from predefined signal control strategies such as switching phases or extending green durations:
+
+  $$
+  a_t \in \{ \text{keep\_phase}, \text{switch\_phase}, \dots \}
+  $$
+
+- **Boltzmann Exploration**  
+  Actions are selected according to the softmax distribution over Q-values:
+
+  $$
+  P(a|s) = \frac{e^{Q(s,a)/\tau}}{\sum_{a'} e^{Q(s,a')/\tau}}
+  $$
+
+  where \( \tau \) is the temperature parameter controlling the randomness of selection.
+
+- **Critic Update**  
+  The value function is updated using the temporal difference (TD) error:
+
+  $$
+  \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
+  $$
+
+- **Actor Update**  
+  The policy is improved using gradients weighted by the TD error.
+
+---
+
+## 3. Experiments
+
+### Simulation Setup
+
+The training is executed in the **SUMO** environment using multiple intersections with E2/E3 detectors for state collection and reward feedback.
+
+### Performance Metrics
+
+- **Queue Length**: Number of vehicles waiting per lane.
+- **Average Speed**: Mean speed of vehicles approaching the intersection.
+- **Waiting Time**: Cumulative stop time at traffic lights.
+- **Lane Occupancy**: Ratio of occupied length to lane length.
+- **Pressure**: Difference in vehicle counts between incoming and outgoing lanes.
+
+### Reward Function
+
+The reward is designed to **minimize waiting time**, computed as:
+
+$$
+\mathcal{R}_t = D_t - D_{t+1}
+$$
+
+Where \( D_t \) and \( D_{t+1} \) are total waiting times at consecutive time steps. A positive reward is given when the system reduces vehicle delay.
+
+---
+
+## 4. Conclusions
+
+This project validates the potential of the **Actor-Critic with Boltzmann exploration** algorithm in controlling multiple intersections. Key findings include:
+
+- Improved traffic efficiency and reduced congestion.
+- Enhanced adaptability to real-time traffic conditions.
+- Stability in learning due to Boltzmann-based action sampling.
+
+The modular design allows for easy expansion to other RL models (e.g., DQN, DDPG) and supports flexible reward and state configurations for real-world deployment.
+
+---
+
+## 🛠️ Code Structure
+
+```bash
+├── main_AC_boltzmann.py           # Main training loop
+├── init/
+│   └── init_AC.py                 # Parameter and YAML loading
+├── agent_ex/
+│   └── intersection_agent.py      # Agent class with Q-table and Boltzmann logic
+├── traci_ex/
+│   ├── basic_commands.py          # SUMO simulation step commands
+│   ├── value_changing.py          # Signal switching
+│   └── value_retrieval.py         # State extraction functions
+├── save_data/
+│   └── save_data.py               # Reward and episode data saving
+├── yaml_config/
+│   └── _config_Actor-Critic(AC).yaml  # Configurations (not included)
