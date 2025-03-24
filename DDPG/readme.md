@@ -92,4 +92,3 @@ where:
 This study validates the effectiveness of the **DDPG** algorithm in traffic signal control by enabling continuous action adjustments for signal timing optimization. Compared to traditional discrete-action reinforcement learning methods, **DDPG** demonstrates superior adaptability and performance in handling complex traffic dynamics.
 
 The experiments were conducted using the traffic simulation platform **SUMO**, testing signal control for multiple intersections. The results show that the **DDPG** algorithm significantly improves traffic efficiency by reducing congestion and dynamically adjusting signal timings based on real-time traffic conditions.
-
